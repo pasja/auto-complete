@@ -1117,6 +1117,16 @@ You can not use it in source definition like (prefix . `NAME')."
   "Abort completion."
   (ac-cleanup))
 
+(defun here-or-end-of-symbol (string)
+  (let* ((end-of-symbol (cdr-safe (bounds-of-thing-at-point 'symbol)))
+		 (remaindar (buffer-substring-no-properties (point) end-of-symbol))
+		 (remaindar-length (length remaindar)))
+	(if (and (>= (length string) remaindar-length)
+			 (string= (substring-no-properties string (- (length remaindar)))
+					  remaindar))
+		end-of-symbol
+	  (point))))
+ 
 (defun ac-expand-string (string &optional remove-undo-boundary)
   "Expand `STRING' into the buffer and update `ac-prefix' to `STRING'.
 This function records deletion and insertion sequences by `undo-boundary'.
@@ -1133,10 +1143,10 @@ that have been made before in this function."
         (progn
           (let (buffer-undo-list)
             (save-excursion
-              (delete-region ac-point (point))))
+              (delete-region ac-point (here-or-end-of-symbol string))))
           (setq buffer-undo-list
                 (nthcdr 2 buffer-undo-list)))
-      (delete-region ac-point (point)))
+      (delete-region ac-point (here-or-end-of-symbol string)))
     (insert string)
     ;; Sometimes, possible when omni-completion used, (insert) added
     ;; to buffer-undo-list strange record about position changes.
